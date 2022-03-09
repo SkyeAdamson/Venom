@@ -1,0 +1,12 @@
+# This is a very useful piece of software
+
+func gcd(a, b) {
+	while b != 0 {
+		VAR t = b
+		VAR b = a % b
+		VAR a = t
+	}
+	return a
+}
+
+gcd(1000, 10)
