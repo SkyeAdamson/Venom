@@ -13,10 +13,10 @@ while False:
 		else:
 			print(repr(result))
 
-with open("example.myopl") as file:
+with open("example.vnm") as file:
 	text = ''.join(file.readlines())
 	result, error = Run.run('example.myopl', text)
-
+	
 	if error:
 		print(error.as_string())
 	elif result:

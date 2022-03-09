@@ -236,8 +236,6 @@ class Parser:
           res.register_advancement()
           self.advance()
 
-          #WORK HERE
-          # Need to return the class, then return the value from it's context
           return res.success(VarObjectAccessNode(atom, var_name_tok))
 
       return res.success(atom)
@@ -740,6 +738,14 @@ class Parser:
       var_name_tok = self.current_tok
       res.register_advancement()
       self.advance()
+
+      if self.current_tok.type == TT_NEWLINE:
+        res.register_advancement()
+        self.advance()
+
+        while self.current_tok.type == TT_NEWLINE:
+          res.register_advancement()
+          self.advance()
 
       if self.current_tok.type != TT_LCURLY:
         return res.failure(InvalidSyntaxError(

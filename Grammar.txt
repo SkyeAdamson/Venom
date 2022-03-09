@@ -61,4 +61,4 @@ func-def    : KEYWORD:func IDENTIFIER?
               (ARROW expr)
             | LCURLY (NEWLINE statements RCURLY)
 
-class-def   : KEYWORD:class IDENTIFIER LCURLY NEWLINE statements RCURLY
+class-def   : KEYWORD:class IDENTIFIER (NEWLINE)* LCURLY NEWLINE statements RCURLY
