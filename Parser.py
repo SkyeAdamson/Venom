@@ -1,3 +1,4 @@
+from locale import currency
 from StringsWithArrows import *
 from Errors import InvalidSyntaxError
 from TokenList import *
@@ -136,6 +137,20 @@ class Parser:
         if res.error: return res
         return res.success(VarAssignNode(var_name, expr))
 
+      elif self.current_tok.type == TT_IDENTIFIER:
+        var_name = self.current_tok
+        res.register_advancement()
+        self.advance()
+
+        if self.current_tok.type == TT_EQ:
+          res.register_advancement()
+          self.advance()
+          expr = res.register(self.expr())
+          if res.error: return res
+          return res.success(VarAssignNode(var_name, expr))
+        else:
+          self.reverse()
+
       node = res.register(self.bin_op(self.comp_expr, ((TT_KEYWORD, 'AND'), (TT_KEYWORD, 'OR'))))
 
       if res.error:
@@ -236,7 +251,23 @@ class Parser:
           res.register_advancement()
           self.advance()
 
-          return res.success(VarObjectAccessNode(atom, var_name_tok))
+          access_node_elements = [atom.var_name_toks[0], var_name_tok]
+          if self.current_tok.type == TT_PERIOD:
+            while(self.current_tok.type == TT_PERIOD):
+              res.register_advancement()
+              self.advance()
+
+              if self.current_tok.type != TT_IDENTIFIER:
+                return res.failure(InvalidSyntaxError(
+                  self.current_tok.pos_start, self.current_tok.pos_end,
+                  f"Expected identifier"
+                ))                
+              
+              access_node_elements.append(self.current_tok)
+              res.register_advancement()
+              self.advance()
+
+          return res.success(VarAccessNode(access_node_elements))
 
       return res.success(atom)
 
@@ -257,7 +288,7 @@ class Parser:
       elif tok.type == TT_IDENTIFIER:
         res.register_advancement()
         self.advance()
-        return res.success(VarAccessNode(tok))
+        return res.success(VarAccessNode([tok]))
 
       elif tok.type == TT_LPAREN:
         res.register_advancement()

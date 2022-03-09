@@ -1,23 +1,22 @@
 # This is a very useful piece of software
 
-class Food 
+class Position 
 {	
 	func init() {
-		VAR name = "Bread"
-		VAR price = 0.75
+		x = 5
+		y = 7
 	}
 }
 
-class Car 
+class Item 
 {
-	VAR brand = "Volvo"
+	position = Position()
 
 	func init() {
-		VAR name = "Joey"
-		VAR price = 30000
+		name = "Joey"
+		price = 30000
 	}
 }
 
-VAR car1 = Car()
-VAR bread = Food()
-VAR car2 = Car()
+my_item = Item()
+return my_item.position.x

@@ -6,6 +6,7 @@ statement		: KEYWORD:return expr?
 						: expr
 
 expr        : KEYWORD:VAR IDENTIFIER EQ expr
+            : IDENTIFIER EQ expr
             : comp-expr ((KEYWORD:AND|KEYWORD:OR) comp-expr)*
 
 comp-expr   : NOT comp-expr
@@ -20,7 +21,7 @@ factor      : (PLUS|MINUS) factor
 
 power       : primary (POW factor)*
 
-primary     : atom "." IDENTIFIER
+primary     : atom '.' (atom '.')* IDENTIFIER
             : atom (LPAREN (expr (COMMA expr)*)? RPAREN)
             : atom
 

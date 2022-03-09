@@ -1,6 +1,4 @@
-import re
 
-from pyrfc3339 import generate
 from Nodes import FuncDefNode, VarAssignNode, CallNode
 from RuntimeResult import RuntimeResult
 from Errors import RuntimeError
@@ -42,37 +40,18 @@ class Interpreter:
 
     def visit_VarAccessNode(self, node, context):
         res = RuntimeResult()
-        var_name = node.var_name_tok.value
-        value = context.symbol_table.get(var_name)
+        cur_context = context
+        for i in range(len(node.var_name_toks)):
+            value = cur_context.symbol_table.get(node.var_name_toks[i].value)
 
-        if not value:
-            return res.failure(RuntimeError(
-                node.pos_start, node.pos_end,
-                f"'{var_name}' is not defined",
-                context
-            ))
+            if not value:
+                return res.failure(RuntimeError(
+                    node.pos_start, node.pos_end,
+                    f"'{node.var_name_toks[i]}' is not defined",
+                    context
+                ))
 
-        value = value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
-        return res.success(value)
-
-    def visit_VarObjectAccessNode(self, node, context):
-        res = RuntimeResult()
-        
-        i_value = context.symbol_table.get(node.object_access_node.var_name_tok.value)
-        if not i_value:
-            return res.failure(RuntimeError(
-                node.pos_start, node.pos_end,
-                f"'{node.object_access_node.var_name_tok.value}' is not defined",
-                context
-            ))
-        
-        value = i_value.context.symbol_table.get(node.var_name_tok.value)
-        if not value:
-            return res.failure(RuntimeError(
-                node.pos_start, node.pos_end,
-                f"'{node.object_access_node.var_name_tok.value}.{node.var_name_tok.value}' is not defined",
-                context
-            )) 
+            cur_context = value.context
 
         value = value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
         return res.success(value)
@@ -266,7 +245,7 @@ class Interpreter:
         res = RuntimeResult()
         args = []
 
-        if not isinstance(context.symbol_table.get(node.node_to_call.var_name_tok.value), BaseClass):
+        if not isinstance(context.symbol_table.get(node.node_to_call.var_name_toks[0].value), BaseClass):
             value_to_call = res.register(self.visit(node.node_to_call, context))
             if res.should_return(): return res
             value_to_call = value_to_call.copy().set_pos(node.pos_start, node.pos_end)
