@@ -26,6 +26,7 @@ TT_COMMA			= 'COMMA'
 TT_ARROW			= 'ARROW'
 TT_NEWLINE		= 'NEWLINE'
 TT_EOF				= 'EOF'
+TT_PERIOD     = 'PERIOD'
 
 KEYWORDS = [
   'VAR',
@@ -40,6 +41,7 @@ KEYWORDS = [
   'STEP',
   'while',
   'func',
+  'class',
   'return',
   'CONTINUE',
   'BREAK',

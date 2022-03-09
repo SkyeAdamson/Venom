@@ -9,10 +9,12 @@ class Parser:
     def __init__(self, tokens):
       self.tokens = tokens
       self.tok_idx = -1
+      self.lookahead_idx = 0
       self.advance()
 
     def advance(self):
       self.tok_idx += 1
+      self.lookahead_idx += 1
       self.update_current_tok()
       return self.current_tok
 
@@ -24,6 +26,8 @@ class Parser:
     def update_current_tok(self):
       if self.tok_idx >= 0 and self.tok_idx < len(self.tokens):
         self.current_tok = self.tokens[self.tok_idx]
+      if self.lookahead_idx >= 0 and self.lookahead_idx < len(self.tokens) - 1:
+        self.lookahead_tok = self.tokens[self.lookahead_idx]
 
     def parse(self):
       res = self.statements()
@@ -184,9 +188,9 @@ class Parser:
       return self.power()
 
     def power(self):
-      return self.bin_op(self.call, (TT_POW, ), self.factor)
+      return self.bin_op(self.primary, (TT_POW, ), self.factor)
 
-    def call(self):
+    def primary(self):
       res = ParseResult()
       atom = res.register(self.atom())
       if res.error: return res
@@ -223,6 +227,19 @@ class Parser:
           res.register_advancement()
           self.advance()
         return res.success(CallNode(atom, arg_nodes))
+      elif self.current_tok.type == TT_PERIOD:
+        res.register_advancement()
+        self.advance()
+
+        if self.current_tok.type == TT_IDENTIFIER:
+          var_name_tok = self.current_tok
+          res.register_advancement()
+          self.advance()
+
+          #WORK HERE
+          # Need to return the class, then return the value from it's context
+          return res.success(VarObjectAccessNode(atom, var_name_tok))
+
       return res.success(atom)
 
     def atom(self):
@@ -283,6 +300,11 @@ class Parser:
         func_def = res.register(self.func_def())
         if res.error: return res
         return res.success(func_def)
+
+      elif tok.matches(TT_KEYWORD, 'class'):
+        class_def = res.register(self.class_def())
+        if res.error : return res
+        return res.success(class_def)
 
       return res.failure(InvalidSyntaxError(
         tok.pos_start, tok.pos_end,
@@ -693,6 +715,64 @@ class Parser:
       return res.success(FuncDefNode(
         var_name_tok,
         arg_name_toks,
+        body,
+        False
+      ))
+
+    def class_def(self):
+      res = ParseResult()
+
+      if not self.current_tok.matches(TT_KEYWORD, "class"):
+        return res.failure(InvalidSyntaxError(
+          self.current_tok.pos_start, self.current_tok.pos_end,
+          f"Expected 'class'"
+        ))
+
+      res.register_advancement()
+      self.advance()    
+
+      if self.current_tok.type != TT_IDENTIFIER:
+        return res.failure(InvalidSyntaxError(
+          self.current_tok.pos_start, self.current_tok.pos_end,
+          f"Expected identifier"
+        ))
+
+      var_name_tok = self.current_tok
+      res.register_advancement()
+      self.advance()
+
+      if self.current_tok.type != TT_LCURLY:
+        return res.failure(InvalidSyntaxError(
+          self.current_tok.pos_start, self.current_tok.pos_end,
+          f"Expected '{{'"
+        ))
+
+      res.register_advancement()
+      self.advance()
+
+      if self.current_tok.type != TT_NEWLINE:
+        return res.failure(InvalidSyntaxError(
+          self.current_tok.pos_start, self.current_tok.pos_end,
+          f"Expected NEWLINE"
+        ))
+
+      res.register_advancement()
+      self.advance()
+
+      body = res.register(self.statements())
+      if res.error: return res
+
+      if not self.current_tok.type == TT_RCURLY:
+        return res.failure(InvalidSyntaxError(
+          self.current_tok.pos_start, self.current_tok.pos_end,
+          f"Expected '}}'"
+        ))
+
+      res.register_advancement()
+      self.advance()
+
+      return res.success(ClassDefNode(
+        var_name_tok,
         body,
         False
       ))

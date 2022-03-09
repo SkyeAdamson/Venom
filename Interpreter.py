@@ -1,3 +1,7 @@
+import re
+
+from pyrfc3339 import generate
+from Nodes import FuncDefNode, VarAssignNode, CallNode
 from RuntimeResult import RuntimeResult
 from Errors import RuntimeError
 from Primative import String, Number, List, Primative
@@ -47,6 +51,28 @@ class Interpreter:
                 f"'{var_name}' is not defined",
                 context
             ))
+
+        value = value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
+        return res.success(value)
+
+    def visit_VarObjectAccessNode(self, node, context):
+        res = RuntimeResult()
+        
+        i_value = context.symbol_table.get(node.object_access_node.var_name_tok.value)
+        if not i_value:
+            return res.failure(RuntimeError(
+                node.pos_start, node.pos_end,
+                f"'{node.object_access_node.var_name_tok.value}' is not defined",
+                context
+            ))
+        
+        value = i_value.context.symbol_table.get(node.var_name_tok.value)
+        if not value:
+            return res.failure(RuntimeError(
+                node.pos_start, node.pos_end,
+                f"'{node.object_access_node.var_name_tok.value}.{node.var_name_tok.value}' is not defined",
+                context
+            )) 
 
         value = value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
         return res.success(value)
@@ -221,22 +247,54 @@ class Interpreter:
 
         return res.success(func_value)
 
+    def visit_ClassDefNode(self, node, context):
+        res = RuntimeResult()
+
+        class_name = node.var_name_tok.value
+        body_node = node.body_node
+        class_value = BaseClass(class_name, body_node).set_context(context).set_pos(node.pos_start, node.pos_end)
+        class_value.context = class_value.generate_new_context()
+        for value in class_value.body_node.element_nodes:
+            res.register(self.visit(value, class_value.context))
+            if res.should_return(): return res
+
+        context.symbol_table.set(class_name, class_value)
+
+        return res.success(class_value)
+
     def visit_CallNode(self, node, context):
         res = RuntimeResult()
         args = []
 
-        value_to_call = res.register(self.visit(node.node_to_call, context))
-        if res.should_return(): return res
-        value_to_call = value_to_call.copy().set_pos(node.pos_start, node.pos_end)
-
-        for arg_node in node.arg_nodes:
-            args.append(res.register(self.visit(arg_node, context)))
+        if not isinstance(context.symbol_table.get(node.node_to_call.var_name_tok.value), BaseClass):
+            value_to_call = res.register(self.visit(node.node_to_call, context))
             if res.should_return(): return res
+            value_to_call = value_to_call.copy().set_pos(node.pos_start, node.pos_end)
 
-        return_value = res.register(value_to_call.execute(args))
-        if res.should_return(): return res
-        return_value = return_value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
-        return res.success(return_value)
+            for arg_node in node.arg_nodes:
+                args.append(res.register(self.visit(arg_node, context)))
+                if res.should_return(): return res
+
+            return_value = res.register(value_to_call.execute(args))
+            if res.should_return(): return res
+            return_value = return_value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
+            return res.success(return_value)
+        else:
+            base_class = res.register(self.visit(node.node_to_call, context))
+            if res.should_return(): return res
+            new_obj = base_class.copy().set_pos(node.pos_start, node.pos_end)
+            new_obj.context = new_obj.generate_new_context()
+            for value in new_obj.body_node.element_nodes:
+                res.register(self.visit(value, new_obj.context))
+                if res.should_return(): return res
+                if isinstance(value, FuncDefNode):
+                    if value.var_name_tok.value == "init":
+                        for statement in value.body_node.element_nodes:
+                            res.register(self.visit(statement, new_obj.context))
+                            if res.should_return(): return res
+        
+            return res.success(new_obj)
+
 
     def visit_ReturnNode(self, node, context):
         res = RuntimeResult()
@@ -254,6 +312,27 @@ class Interpreter:
 
     def visit_BreakNode(self, node, context):
         return RuntimeResult().success_break()
+
+class BaseClass(Primative):
+    
+    def __init__(self, name, body_node):
+        super().__init__()
+        self.name = name
+        self.body_node = body_node
+
+    def generate_new_context(self):
+        new_context = Context(self.name, self.context, self.pos_start)
+        new_context.symbol_table = SymbolTable(new_context.parent.symbol_table)
+        return new_context
+
+    def __repr__(self):
+        return f"<class {self.name}>"
+
+    def copy(self):
+        copy = BaseClass(self.name, self.body_node)
+        copy.set_context(self.context)
+        copy.set_pos(self.pos_start, self.pos_end)
+        return copy
 
 class BaseFunction(Primative):
     def __init__(self, name):

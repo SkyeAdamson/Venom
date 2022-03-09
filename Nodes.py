@@ -25,8 +25,19 @@ class ListNode:
         self.pos_start = pos_start
         self.pos_end = pos_end
 
+    def __repr__(self):
+        return f'[{", ".join([repr(x) for x in self.element_nodes])}]'
+
 class VarAccessNode:
     def __init__(self, var_name_tok):
+        self.var_name_tok = var_name_tok
+
+        self.pos_start = self.var_name_tok.pos_start
+        self.pos_end = self.var_name_tok.pos_end
+
+class VarObjectAccessNode:
+    def __init__(self, object_access_node, var_name_tok):
+        self.object_access_node = object_access_node
         self.var_name_tok = var_name_tok
 
         self.pos_start = self.var_name_tok.pos_start
@@ -106,6 +117,15 @@ class FuncDefNode:
         else:
             self.pos_start = self.body_node.pos_start
 
+        self.pos_end = self.body_node.pos_end
+
+class ClassDefNode:
+    def __init__(self, var_name_tok, body_node, should_auto_return):
+        self.var_name_tok = var_name_tok
+        self.body_node = body_node
+        self.should_auto_return = should_auto_return
+
+        self.pos_start = self.var_name_tok.pos_start
         self.pos_end = self.body_node.pos_end
 
 class CallNode:

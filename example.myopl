@@ -1,12 +1,13 @@
 # This is a very useful piece of software
 
-func gcd(a, b) {
-	while b != 0 {
-		VAR t = b
-		VAR b = a % b
-		VAR a = t
+class Car {
+	VAR brand = "Volvo"
+
+	func init() {
+		VAR reg = "NA65 5TG"
+		VAR name = "Joey"
 	}
-	return a
 }
 
-gcd(1000, 10)
+VAR my_car = Car()
+return my_car.name

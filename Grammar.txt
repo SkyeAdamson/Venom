@@ -18,9 +18,11 @@ term        : factor ((MUL|DIV|MOD) factor)*
 factor      : (PLUS|MINUS) factor
             : power
 
-power       : call (POW factor)*
+power       : primary (POW factor)*
 
-call        : atom (LPAREN (expr (COMMA expr)*)? RPAREN)?
+primary     : atom "." IDENTIFIER
+            : atom (LPAREN (expr (COMMA expr)*)? RPAREN)
+            : atom
 
 atom        : INT|FLOAT|STRING|IDENTIFIER
             : LPAREN expr RPAREN
@@ -29,6 +31,7 @@ atom        : INT|FLOAT|STRING|IDENTIFIER
             : for-expr
             : while-expr
             : func-def
+            : class-def
 
 list-expr   : LSQUARE (expr (COMMA expr)*)? RSQUARE
 
@@ -57,3 +60,5 @@ func-def    : KEYWORD:func IDENTIFIER?
               LPAREN (IDENTIFIER (COMMA IDENTIFIER)*)? RPAREN
               (ARROW expr)
             | LCURLY (NEWLINE statements RCURLY)
+
+class-def   : KEYWORD:class IDENTIFIER LCURLY NEWLINE statements RCURLY

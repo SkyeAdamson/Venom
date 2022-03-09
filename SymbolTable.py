@@ -12,5 +12,8 @@ class SymbolTable:
     def set(self, name, value):
         self.symbols[name] = value
 
+    def __len__(self):
+        return len(self.symbols)
+
     def remove(self, name):
         del self.symbols[name]
