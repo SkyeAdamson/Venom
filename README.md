@@ -10,3 +10,4 @@ The project was heavily inspired by [CodePulse's tutorial series](https://youtub
 - Implement complex identifiers correctly (**Currently Working On**)
 - Add class inheritance support
 - Add dunder methods
+- Add a standard library
