@@ -135,21 +135,38 @@ class Parser:
         self.advance()
         expr = res.register(self.expr())
         if res.error: return res
-        return res.success(VarAssignNode(var_name, expr))
+        return res.success(VarAssignNode([var_name], expr))
 
-      elif self.current_tok.type == TT_IDENTIFIER:
-        var_name = self.current_tok
+      elif self.current_tok.type == TT_IDENTIFIER or self.current_tok.matches(TT_KEYWORD, "self"):
+        identifier_list = []
+        identifier_list.append(self.current_tok)
         res.register_advancement()
         self.advance()
+        reverse_index = 1
+
+        if self.current_tok.type == TT_PERIOD:
+          while self.current_tok.type == TT_PERIOD:
+            res.register_advancement()
+            self.advance()
+            reverse_index += 1
+            if self.current_tok.type != TT_IDENTIFIER:
+              return res.failure(InvalidSyntaxError(
+                self.current_tok.pos_start, self.current_tok.pos_end,
+                "Expected identifier"
+              ))
+            identifier_list.append(self.current_tok)
+            res.register_advancement()
+            self.advance()
+            reverse_index += 1
 
         if self.current_tok.type == TT_EQ:
           res.register_advancement()
           self.advance()
           expr = res.register(self.expr())
           if res.error: return res
-          return res.success(VarAssignNode(var_name, expr))
+          return res.success(VarAssignNode(identifier_list, expr))
         else:
-          self.reverse()
+          self.reverse(reverse_index)
 
       node = res.register(self.bin_op(self.comp_expr, ((TT_KEYWORD, 'AND'), (TT_KEYWORD, 'OR'))))
 

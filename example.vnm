@@ -2,10 +2,11 @@
 
 class Position 
 {	
-	func init() {
-		x = 5
-		y = 7
+	func init(x_pos, y_pos) {
+		self.x = x_pos
+		self.y = y_pos
 	}
+
 }
 
 class Item 
@@ -14,9 +15,9 @@ class Item
 
 	func init() {
 		name = "Joey"
-		price = 30000
+		self.price = 30000
 	}
 }
 
-my_item = Item()
-return my_item.position.x
+new_pos = Position(4, 3)
+return new_pos.y

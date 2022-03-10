@@ -1,3 +1,5 @@
+NEED TO IMPLEMENT COMPLEX IDENTIFIER
+
 statements  : NEWLINE* statement (NEWLINE+ statement)* NEWLINE*
 
 statement		: KEYWORD:return expr?
@@ -6,7 +8,7 @@ statement		: KEYWORD:return expr?
 						: expr
 
 expr        : KEYWORD:VAR IDENTIFIER EQ expr
-            : IDENTIFIER EQ expr
+            : complex-identifier EQ expr
             : comp-expr ((KEYWORD:AND|KEYWORD:OR) comp-expr)*
 
 comp-expr   : NOT comp-expr
@@ -21,11 +23,10 @@ factor      : (PLUS|MINUS) factor
 
 power       : primary (POW factor)*
 
-primary     : atom '.' (atom '.')* IDENTIFIER
-            : atom (LPAREN (expr (COMMA expr)*)? RPAREN)
+primary     : atom (LPAREN (expr (COMMA expr)*)? RPAREN)
             : atom
 
-atom        : INT|FLOAT|STRING|IDENTIFIER
+atom        : INT|FLOAT|STRING
             : LPAREN expr RPAREN
             : list-expr
             : if-expr
@@ -33,6 +34,10 @@ atom        : INT|FLOAT|STRING|IDENTIFIER
             : while-expr
             : func-def
             : class-def
+            : complex-identifier
+
+complex-identifier  :   (KEYWORD:self '.')? IDENTIFIER ('.' IDENTIFIER)*
+                    :   IDENTIFIER ('.' IDENTIFIER)*
 
 list-expr   : LSQUARE (expr (COMMA expr)*)? RSQUARE
 

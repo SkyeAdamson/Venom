@@ -45,4 +45,5 @@ KEYWORDS = [
   'return',
   'CONTINUE',
   'BREAK',
+  'self'
 ]

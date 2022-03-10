@@ -58,11 +58,24 @@ class Interpreter:
 
     def visit_VarAssignNode(self, node, context):
         res = RuntimeResult()
-        var_name = node.var_name_tok.value
+        cur_context = context
+        for i in range(len(node.var_name_toks) - 1):
+            var = cur_context.symbol_table.get(node.var_name_toks[i].value)
+
+            if not var:
+                return res.failure(RuntimeError(
+                    node.pos_start, node.pos_end,
+                    f"'{node.var_name_toks[i]}' is not defined",
+                    context
+                ))
+
+            cur_context = var.context
+
+        var_name = node.var_name_toks[-1].value
         value = res.register(self.visit(node.value_node, context))
         if res.should_return(): return res
 
-        context.symbol_table.set(var_name, value)
+        cur_context.symbol_table.set(var_name, value)
         return res.success(value)
 
     def visit_BinOpNode(self, node, context):
@@ -241,11 +254,11 @@ class Interpreter:
 
         return res.success(class_value)
 
-    def visit_CallNode(self, node, context):
+    def visit_CallNode(self, node, context, self_ref=None):
         res = RuntimeResult()
         args = []
 
-        if not isinstance(context.symbol_table.get(node.node_to_call.var_name_toks[0].value), BaseClass):
+        if not hasattr(node.node_to_call, 'var_name_toks'):
             value_to_call = res.register(self.visit(node.node_to_call, context))
             if res.should_return(): return res
             value_to_call = value_to_call.copy().set_pos(node.pos_start, node.pos_end)
@@ -254,7 +267,7 @@ class Interpreter:
                 args.append(res.register(self.visit(arg_node, context)))
                 if res.should_return(): return res
 
-            return_value = res.register(value_to_call.execute(args))
+            return_value = res.register(value_to_call.execute(args, self_ref))
             if res.should_return(): return res
             return_value = return_value.copy().set_pos(node.pos_start, node.pos_end).set_context(context)
             return res.success(return_value)
@@ -266,12 +279,12 @@ class Interpreter:
             for value in new_obj.body_node.element_nodes:
                 res.register(self.visit(value, new_obj.context))
                 if res.should_return(): return res
+
                 if isinstance(value, FuncDefNode):
                     if value.var_name_tok.value == "init":
-                        for statement in value.body_node.element_nodes:
-                            res.register(self.visit(statement, new_obj.context))
-                            if res.should_return(): return res
-        
+                        res.register(self.visit_CallNode(CallNode(value, node.arg_nodes), new_obj.context, self_ref=new_obj))
+
+            new_obj.context.symbol_table.set("self", new_obj)
             return res.success(new_obj)
 
 
@@ -357,23 +370,25 @@ class BaseFunction(Primative):
         return res.success(None)
 
 class Function(BaseFunction):
-    def __init__(self, name, body_node, arg_names, should_auto_return):
+    def __init__(self, name, body_node, arg_names, should_auto_return, context=None):
         super().__init__(name)
         self.body_node = body_node
         self.arg_names = arg_names
         self.should_auto_return = should_auto_return
 
-    def execute(self, args):
+    def execute(self, args, self_ref=None):
         res = RuntimeResult()
         interpreter = Interpreter()
         exec_ctx = self.generate_new_context()
+        if self_ref:
+            exec_ctx.symbol_table.set("self", self_ref)
 
         res.register(self.check_and_populate_args(self.arg_names, args, exec_ctx))
         if res.should_return(): return res
 
         value = res.register(interpreter.visit(self.body_node, exec_ctx))
         if res.should_return() and res.func_return_value == None: return res
-
+    
         ret_value = (value if self.should_auto_return else None) or res.func_return_value or Number.null
         return res.success(ret_value)
 

@@ -1,6 +1,3 @@
-from socket import VM_SOCKETS_INVALID_VERSION
-
-
 class NumberNode:
     def __init__(self, tok):
         self.tok = tok
@@ -38,20 +35,12 @@ class VarAccessNode:
         self.pos_start = self.var_name_toks[0].pos_start
         self.pos_end = self.var_name_toks[-1].pos_end
 
-class VarObjectAccessNode:
-    def __init__(self, object_access_node, var_name_tok):
-        self.object_access_node = object_access_node
-        self.var_name_tok = var_name_tok
-
-        self.pos_start = self.var_name_tok.pos_start
-        self.pos_end = self.var_name_tok.pos_end
-
 class VarAssignNode:
-    def __init__(self, var_name_tok, value_node):
-        self.var_name_tok = var_name_tok
+    def __init__(self, var_name_toks, value_node):
+        self.var_name_toks = var_name_toks
         self.value_node = value_node
 
-        self.pos_start = self.var_name_tok.pos_start
+        self.pos_start = self.var_name_toks[0].pos_start
         self.pos_end = self.value_node.pos_end
 
 class BinOpNode:
